@@ -1,20 +1,18 @@
 use_module(library(arithmetics, random, lists)).
 
 % fact database
-
 sqrSigma(1).
 mean(0).
-maxTime(10).
-maxIter(5).
+maxTime(10000).
+maxIter(10).
 
 
 % helper functions
-squareList([], []).
-squareList([X|XS], [Y|Z]) :- Y is X*X,squareList(XS,Z).
+squareList([],[]).
+squareList([X|XS], [X2|Y]) :- X2 is X*X, squareList(XS,Y).
 
 sumList([N1],N1).
-sumList([], N1) :- N1 = 0.
-sumList([X,Y|XS],Z) :- sumList([XS],Z), Z is Z + X + Y.
+sumList([X,Y|XS],Z) :- F is X + Y, sumList([F|XS],Z),! .
 
 % sphere function
 sumSquareList(X,Y) :- squareList(X,Z), sumList(Z, Y).
@@ -32,8 +30,8 @@ gaussian(Mu, SigmaSqr, NormalRandom) :-
     normal(Mu, SigmaSqr, NormalRandom), !.
 
 
-gaussianVector(_, _, [], _).
-gaussianVector(Mu, SigmaSqr, [_|XS], [RN|OUT1] ) :- gaussian(Mu, SigmaSqr, RN), gaussianVector(Mu, SigmaSqr, XS, OUT1).
+gaussianVector(_, _, [], []).
+gaussianVector(Mu, SigmaSqr, [_|XS], [RN|OUT1] ) :- gaussian(Mu, SigmaSqr, RN), gaussianVector(Mu, SigmaSqr, XS, OUT1),!.
 
 addVectors([], [], _).
 addVectors([X|XS], [Y|YS], [S|SS]) :- addVectors(XS, YS, SS), S is Y + X.
@@ -53,35 +51,49 @@ startEvolutionStrategy :-
   sqrSigma(Sigma),
   mean(Mean),
   gaussianVector(Mean,Sigma,[1,2,3,4,5,6,7,8,9,0], X), 
-  evolutionStrategy(X, Sigma, 0, 0).
+  fitnesse(X,FX), display(FX),nl,
+  oneoneEvolutionStrategy(X, Sigma, 1, 0).
 
-test1(X) :- X =:= [1.234242432].
+test1(X) :- X is 1, X is 2.
 
-% one + one evolution strategy innerloop
-evolutionStrategy(X, Sigma, Time, SuccessOffs) :- 
+
+
+% one + one evolution strategy
+% alter the sqrSigma changing period be setting the maxIter fact
+oneoneEvolutionStrategy(X, Sigma, Time, SuccessOffs) :- 
+  maxTime(MaxTime),
+  Time < MaxTime,
+  maxIter(IterMax),
+  0 is (Time mod IterMax), 
+  (((SuccessOffs/IterMax) < 0.2,
+    NewSigma is Sigma*0.82)
+    ;
+    NewSigma is Sigma*1.22),
+%  display('NewSigma : '), display(NewSigma),nl,
+  NewSuccessOffs is 0,
+  NewTime is Time + 1,
+  oneoneEvolutionStrategy(X, NewSigma, NewTime, NewSuccessOffs),!.
+
+oneoneEvolutionStrategy(X, Sigma, Time, SuccessOffs) :- 
   maxTime(MaxTime),
   Time < MaxTime,
   muteVector(X,Sigma,Xp),
   fitnesse(Xp, FXp),
   fitnesse(X, FX),
+ % display('generation : '), display(Time), display(' parent : '), display(FX), 
+ % display(' offs : '), display(FXp), display(' sigma : '), display(Sigma),nl,
   NewTime is Time + 1,
   ((FXp < FX, % successful offspring
-	 NewSuccessOffs is SuccessOffs + 1,
-	 NewX is Xp)
+ %   display('got successfull offspring'),nl,
+    NewSuccessOffs is SuccessOffs + 1,
+    NewX = Xp)
   ;
-     (NewSuccessOffs is SuccessOffs,
-	 NewX is X)),
-  maxIter(IterMax),
-  (
-  ((Time mod IterMax) == 0,
-  ((NewSuccessOffs/IterMax) < 0.2,
-  NewSigma is Sigma*0.82;
-  NewSigma is Sigma*1.22));
-  NewSigma is Sigma
+    (NewSuccessOffs is SuccessOffs,
+    NewX = X)
   ),
-  evolutionStragegy(NewX, NewSigma, NewTime, NewSuccessOffs).
+  oneoneEvolutionStrategy(NewX, Sigma, NewTime, NewSuccessOffs).
 
-evolutionStrategy(X,_,_,_) :- write(X).
+oneoneEvolutionStrategy(X,_,_,_) :- fitnesse(X, Y), display(Y),nl.
   
 
   
