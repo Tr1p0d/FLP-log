@@ -7,18 +7,29 @@ maxTime(10000).
 maxIter(10).
 
 
-% helper functions
+% math functions
 squareList([],[]).
 squareList([X|XS], [X2|Y]) :- X2 is X*X, squareList(XS,Y).
 
 sumList([N1],N1).
 sumList([X,Y|XS],Z) :- F is X + Y, sumList([F|XS],Z),! .
 
+rastrigin([],[]).
+rastrigin([X|XS],[Y|YS]) :- 
+  A is X*X,
+  cos(2*pi*X,B1),
+  B is 10*B1,
+  Y is A - B + 10,
+  rastrigin(XS, YS).
+  
+
 % sphere function
-sumSquareList(X,Y) :- squareList(X,Z), sumList(Z, Y).
+sphereFunction(X,Y) :- squareList(X,Z), sumList(Z, Y).
+
+rastriginFunction(X,Y) :- rastrigin(X,Z), sumList(Z,Y).
 
 % fitness function
-fitnesse(X,Y) :- sumSquareList(X,Y).
+fitnesse(X,Y) :- rastriginFunction(X,Y).
 
 normal(Mu, SigmaSqr, NormalRandom) :-
     % random(0, 2147483647, R1),
